@@ -1,0 +1,7 @@
+tests/
+docs/
+.github/
+.repoatlas/
+node_modules/
+coverage/
+*.tgz
