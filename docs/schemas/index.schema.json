@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "repoatlas index",
+  "type": "object",
+  "required": ["version", "root", "generatedAt", "files", "edges"],
+  "properties": {
+    "version": { "const": 1 },
+    "root": { "type": "string" },
+    "generatedAt": { "type": "string" },
+    "files": { "type": "array" },
+    "edges": { "type": "array" }
+  }
+}
