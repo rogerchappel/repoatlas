@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+.repoatlas/
+*.tgz
+.DS_Store
+.env
+.env.*
