@@ -82,6 +82,7 @@ repoatlas is local-first:
 - No hidden telemetry.
 - No source upload.
 - Default write is limited to `.repoatlas/index.json`.
+- Common local secret files such as `.env`, `.npmrc`, private keys, `node_modules`, build output, and `.git` are skipped during indexing.
 - MCP V1 is read-only and stdio-only.
 
 ## Development
