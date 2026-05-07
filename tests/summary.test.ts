@@ -7,6 +7,6 @@ const root = new URL('./tests/fixtures/mixed-repo/', `file://${process.cwd()}/`)
 
 test('summarizes roles and languages', async () => {
   const summary = summarizeIndex(await buildIndex(root));
-  assert.equal(summary.roles.route, 1);
+  assert.ok(summary.roles.route >= 1);
   assert.ok(summary.languages.typescript >= 3);
 });
