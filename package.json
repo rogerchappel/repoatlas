@@ -4,11 +4,11 @@
   "description": "Local-first repository intelligence CLI and MCP server for coding agents.",
   "type": "module",
   "bin": {
-    "repoatlas": "./dist/cli.js"
+    "repoatlas": "./dist/src/cli.js"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/src/index.js",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/src/index.js"
   },
   "files": [
     "dist",

@@ -8,7 +8,7 @@ import { test } from 'node:test';
 
 const run = promisify(execFile);
 const fixture = new URL('./tests/fixtures/mixed-repo/', `file://${process.cwd()}/`).pathname;
-const cli = new URL('./dist/cli.js', `file://${process.cwd()}/`).pathname;
+const cli = new URL('./dist/src/cli.js', `file://${process.cwd()}/`).pathname;
 
 test('CLI indexes, briefs, packs, asks, and serves MCP tools', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'repoatlas-'));
