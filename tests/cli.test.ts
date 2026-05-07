@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, cp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { test } from 'node:test';
 
@@ -25,9 +25,24 @@ test('CLI indexes, briefs, packs, asks, and serves MCP tools', async () => {
     assert.match(pack.stdout, /repoatlas context pack/);
     const ask = await run('node', [cli, 'ask', 'DatabaseQueue', '--root', dir]);
     assert.match(ask.stdout, /src\/lib\/db.ts/);
-    const mcp = await run('node', [cli, 'mcp', '--root', dir, '--stdio'], { input: '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n' });
+    const mcp = await runWithInput('node', [cli, 'mcp', '--root', dir, '--stdio'], '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}\n');
     assert.match(mcp.stdout, /repoatlas_impact/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+function runWithInput(command: string, args: string[], input: string): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('error', reject);
+    child.on('close', (code) => code === 0 ? resolve({ stdout, stderr }) : reject(new Error(`exit ${code}: ${stderr}`)));
+    child.stdin.end(input);
+  });
+}
