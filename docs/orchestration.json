@@ -1,0 +1,28 @@
+{
+  "name": "repoatlas",
+  "version": 1,
+  "localFirst": true,
+  "defaultWrites": [".repoatlas/index.json"],
+  "networkCallsByDefault": false,
+  "commands": {
+    "index": "Build a deterministic local repository index.",
+    "impact": "Explain blast radius and likely verification for a file.",
+    "file": "Describe role, imports, and symbols for one indexed file.",
+    "pack": "Create a compact evidence pack for a topic.",
+    "ask": "Search indexed paths and symbols.",
+    "mcp --stdio": "Expose read-only tools over stdio."
+  },
+  "mcpTools": [
+    "repoatlas_search",
+    "repoatlas_impact",
+    "repoatlas_file_brief",
+    "repoatlas_context_pack"
+  ],
+  "verification": [
+    "npm run check",
+    "npm test",
+    "npm run build",
+    "npm run smoke",
+    "bash scripts/validate.sh"
+  ]
+}
