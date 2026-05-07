@@ -1,51 +1,100 @@
-# repoatlas
+# repoatlas 🗺️
 
-Local-first repository intelligence CLI and MCP server for coding agents.
+**Local-first codebase intelligence for coding agents.** repoatlas precomputes the boring repository facts agents keep rediscovering: file roles, import edges, symbols, likely tests, and compact context packs. It is deliberately deterministic, evidence-backed, and private by default.
 
-## Status
-
-This repository is early-stage. Confirm the current support, release, and
-security posture before using it in production.
-
-## Install
-
-Replace this section with the generated repository's installation steps.
-
-```sh
-pnpm install
+```bash
+npm install -g repoatlas
+repoatlas index .
+repoatlas impact src/routes/social.ts
+repoatlas pack --topic "social publishing flow" --max-tokens 8000
+repoatlas mcp --stdio
 ```
 
-## Use
+## Why repoatlas exists
 
-Replace this section with the smallest useful example for the generated
-repository.
+Agents are good at editing after they understand the terrain. They are less good at repeatedly rebuilding the map. repoatlas gives them a small, repo-owned atlas before they touch code:
 
-```sh
-pnpm dev
+- **Repository manifest** with roles for source, tests, docs, config, CI, routes, schema, infra, and assets.
+- **JS/TS/Python import graph** from deterministic parsing; no LLM required.
+- **Symbol inventory** for common functions, classes, and exports.
+- **Impact briefs** that cite dependents, likely tests, docs, config, and evidence paths.
+- **Context packs** that fit agent prompts without dumping the whole repo.
+- **Read-only MCP tools** for hosts that prefer tool calls over shell commands.
+
+## Commands
+
+### `repoatlas index [root]`
+
+Builds `.repoatlas/index.json` in the target repository.
+
+```bash
+repoatlas index .
+repoatlas index . --json
 ```
 
-## Verify
+### `repoatlas impact <file>`
 
-Run the local validation script before opening a pull request:
+Shows blast radius, likely tests, related docs/config, confidence, and evidence paths.
 
-```sh
+```bash
+repoatlas impact src/routes/social.ts
+repoatlas impact src/routes/social.ts --json
+```
+
+### `repoatlas file <file>`
+
+Explains a file's role, language, imports, and detected symbols.
+
+```bash
+repoatlas file src/routes/social.ts
+```
+
+### `repoatlas pack --topic "..."`
+
+Creates a compact markdown evidence pack for agents.
+
+```bash
+repoatlas pack --topic "database queue writes" --max-tokens 4000
+```
+
+### `repoatlas ask <query>`
+
+Searches indexed paths and symbols deterministically.
+
+```bash
+repoatlas ask registerSocialRoutes
+```
+
+### `repoatlas mcp --stdio`
+
+Starts a read-only stdio MCP server with these tools:
+
+- `repoatlas_search`
+- `repoatlas_impact`
+- `repoatlas_file_brief`
+- `repoatlas_context_pack`
+
+## Privacy and safety
+
+repoatlas is local-first:
+
+- No network calls in indexing or query commands.
+- No hidden telemetry.
+- No source upload.
+- Default write is limited to `.repoatlas/index.json`.
+- MCP V1 is read-only and stdio-only.
+
+## Development
+
+```bash
+npm install
+npm run check
+npm test
+npm run build
+npm run smoke
 bash scripts/validate.sh
 ```
 
-`scripts/validate.sh` runs the repository's standard local checks when they are defined and will also run `agent-qc ready` when `agent-qc` is installed. Missing `agent-qc` is treated as a skip, not a failure.
+## Status
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution expectations. Changes
-should be small, reviewable, and verified before review.
-
-## Security
-
-See [SECURITY.md](SECURITY.md) for vulnerability reporting guidance. Replace
-the default security policy before publishing the generated repository.
-
-These links assume this README has been copied to the generated repository root.
-
-## License
-
-MIT
+V1 focuses on useful deterministic structure for JS/TS/Python repositories. It intentionally avoids semantic search, hosted sync, and automatic refactors until local evidence quality is strong.
