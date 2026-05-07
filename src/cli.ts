@@ -5,6 +5,7 @@ import { buildIndex, loadIndex, writeIndex } from './indexer.js';
 import { buildContextPack } from './pack.js';
 import { findFile, formatFileBrief } from './fileBrief.js';
 import { runMcpStdio } from './mcp.js';
+import { summarizeIndex } from './summary.js';
 
 const program = new Command();
 program.name('repoatlas').description('Local-first repository intelligence for coding agents.').version('0.1.0');
@@ -17,7 +18,10 @@ program.command('index')
     const index = await buildIndex(root);
     const target = await writeIndex(index);
     if (opts.json) console.log(JSON.stringify(index, null, 2));
-    else console.log(`Indexed ${index.files.length} files and ${index.edges.length} import edges -> ${target}`);
+    else {
+      const summary = summarizeIndex(index);
+      console.log(`Indexed ${summary.files} files and ${summary.edges} import edges -> ${target}`);
+    }
   });
 
 program.command('impact')
