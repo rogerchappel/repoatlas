@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { buildIndex } from '../src/indexer.js';
 import { buildImpactBrief } from '../src/impact.js';
 
-const root = new URL('./fixtures/mixed-repo/', import.meta.url).pathname;
+const root = new URL('./tests/fixtures/mixed-repo/', `file://${process.cwd()}/`).pathname;
 
 test('indexes fixture files with deterministic import edges', async () => {
   const index = await buildIndex(root);

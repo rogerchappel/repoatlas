@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 import { test } from 'node:test';
 
 const run = promisify(execFile);
-const fixture = new URL('./fixtures/mixed-repo/', import.meta.url).pathname;
+const fixture = new URL('./tests/fixtures/mixed-repo/', `file://${process.cwd()}/`).pathname;
 const cli = new URL('../dist/cli.js', import.meta.url).pathname;
 
 test('CLI indexes, briefs, packs, asks, and serves MCP tools', async () => {
