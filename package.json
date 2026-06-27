@@ -12,7 +12,18 @@
   },
   "files": [
     "dist/src",
+    "docs/CONTEXT_PACKS.md",
+    "docs/IMPACT_BRIEFS.md",
+    "docs/INDEX_FORMAT.md",
+    "docs/MCP.md",
+    "docs/PRIVACY.md",
+    "docs/schemas",
+    "examples",
     "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "ROADMAP.md",
+    "SECURITY.md",
     "LICENSE"
   ],
   "scripts": {
