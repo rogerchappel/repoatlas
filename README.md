@@ -93,8 +93,12 @@ npm run check
 npm test
 npm run build
 npm run smoke
+npm run release:check
 bash scripts/validate.sh
 ```
+
+`release:check` runs the typecheck, tests, build, smoke fixture, and package
+dry-run used to verify the CLI before release-facing changes.
 
 ## Status
 
