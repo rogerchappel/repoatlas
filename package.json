@@ -34,7 +34,10 @@
     "pretest": "npm run build",
     "smoke": "bash tests/smoke.sh",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs",
-    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
+    "release:contract": "node scripts/release-contract.mjs",
+    "release:contract:test": "node --test tests/release-contract.test.mjs",
+    "release:dry-run": "node scripts/release-contract.mjs --pack",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke && npm run release:contract:test && npm run release:contract"
   },
   "keywords": [
     "mcp",
