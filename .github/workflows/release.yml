@@ -25,6 +25,8 @@ jobs:
           node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@^11.5.1
       - name: Install dependencies
         run: npm ci
       - name: Install ReleaseBox
@@ -36,12 +38,22 @@ jobs:
       - name: ReleaseBox readiness check
         run: node /tmp/releasebox/bin/releasebox.js check .
       - name: Run release checks
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: npm run release:check
-      - name: Build package
-        run: npm pack
+      - name: Build exact package artifact
+        id: pack
+        run: |
+          npm pack --json > npm-pack.json
+          echo "tarball=$(node -e "console.log(require('./npm-pack.json')[0].filename)")" >> "$GITHUB_OUTPUT"
+      - name: Publish package to npm
+        env:
+          PACKAGE_TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: npm publish "$PACKAGE_TARBALL" --provenance --access public
       - name: Generate release notes
         run: node /tmp/releasebox/bin/releasebox.js notes . > RELEASE_NOTES.md
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md *.tgz
+          PACKAGE_TARBALL: ${{ steps.pack.outputs.tarball }}
+        run: gh release create "${GITHUB_REF_NAME}" --notes-file RELEASE_NOTES.md "$PACKAGE_TARBALL"
