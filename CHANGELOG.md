@@ -7,6 +7,8 @@ format and uses semantic versioning when versioned releases are published.
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-07-24
+
 ### Added
 
 - Initial project setup.
@@ -18,4 +20,5 @@ format and uses semantic versioning when versioned releases are published.
 - Latest release:
   `https://github.com/rogerchappel/repoatlas/releases/latest`
 
-Replace placeholder links once the first release tag exists.
+[Unreleased]: https://github.com/rogerchappel/repoatlas/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/rogerchappel/repoatlas/compare/v0.1.3...v0.1.4

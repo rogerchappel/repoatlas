@@ -39,6 +39,8 @@ jobs:
         run: node /tmp/releasebox/bin/releasebox.js check .
       - name: Run release checks
         run: npm run release:check
+      - name: Verify package and simulated tag agree
+        run: RELEASE_TAG="v$(node -p "require('./package.json').version")" npm run release:dry-run
       - name: Release notes preview
         run: |
           node /tmp/releasebox/bin/releasebox.js notes . > release-notes-preview.md

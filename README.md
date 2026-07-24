@@ -97,10 +97,13 @@ npm run release:check
 bash scripts/validate.sh
 ```
 
-`release:check` runs the typecheck, tests, build, smoke fixture, and package
-assertions used to verify the CLI before release-facing changes. Maintainers
-can use the [release checklist](docs/RELEASE_CHECKLIST.md) to review a candidate
-without publishing or tagging it.
+`release:check` runs the typecheck, tests, build, smoke fixture, package
+assertions, and release-contract tests. It also requires the candidate version
+to be greater than the current npm `latest` version. `release:dry-run` verifies
+that the packed artifact version agrees with a `RELEASE_TAG` when one is
+provided. Maintainers can use the
+[release checklist](docs/RELEASE_CHECKLIST.md) to review a candidate without
+publishing or tagging it.
 
 ## Status
 
