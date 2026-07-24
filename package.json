@@ -1,6 +1,6 @@
 {
   "name": "repoatlas",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "description": "Local-first repository intelligence CLI and MCP server for coding agents.",
   "type": "module",
   "bin": {
