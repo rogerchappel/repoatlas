@@ -65,9 +65,21 @@ export function resolveImport(from: string, specifier: string, allFiles: Set<str
   const base = specifier.startsWith('/') ? specifier.slice(1) : path.posix.normalize(path.posix.join(path.posix.dirname(from), specifier));
   return firstExisting([
     base,
+    ...typescriptSourceCandidates(base),
     `${base}.ts`, `${base}.tsx`, `${base}.js`, `${base}.jsx`, `${base}.mjs`, `${base}.cjs`, `${base}.py`,
     `${base}/index.ts`, `${base}/index.tsx`, `${base}/index.js`, `${base}/__init__.py`
   ], allFiles);
+}
+
+function typescriptSourceCandidates(base: string): string[] {
+  const extensionMap: Record<string, string[]> = {
+    '.js': ['.ts', '.tsx'],
+    '.jsx': ['.tsx'],
+    '.mjs': ['.mts'],
+    '.cjs': ['.cts']
+  };
+  const extension = path.posix.extname(base);
+  return (extensionMap[extension] ?? []).map((sourceExtension) => `${base.slice(0, -extension.length)}${sourceExtension}`);
 }
 
 function firstExisting(candidates: string[], allFiles: Set<string>) { return candidates.find((c) => allFiles.has(c)); }
