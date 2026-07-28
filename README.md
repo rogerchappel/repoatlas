@@ -15,7 +15,7 @@ repoatlas mcp --stdio
 Agents are good at editing after they understand the terrain. They are less good at repeatedly rebuilding the map. repoatlas gives them a small, repo-owned atlas before they touch code:
 
 - **Repository manifest** with roles for source, tests, docs, config, CI, routes, schema, infra, and assets.
-- **JS/TS/Python import graph** from deterministic parsing; no LLM required.
+- **JS/TS/Python import graph** from deterministic parsing; no LLM required. NodeNext-style relative `.js`, `.jsx`, `.mjs`, and `.cjs` specifiers resolve to their TypeScript source counterparts when the referenced JavaScript file is not present.
 - **Symbol inventory** for common functions, classes, and exports.
 - **Impact briefs** that cite dependents, likely tests, docs, config, and evidence paths.
 - **Context packs** that fit agent prompts without dumping the whole repo.
