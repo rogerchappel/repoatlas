@@ -6,9 +6,10 @@ import { buildContextPack } from './pack.js';
 import { findFile, formatFileBrief } from './fileBrief.js';
 import { runMcpStdio } from './mcp.js';
 import { summarizeIndex } from './summary.js';
+import { VERSION } from './version.js';
 
 const program = new Command();
-program.name('repoatlas').description('Local-first repository intelligence for coding agents.').version('0.1.0');
+program.name('repoatlas').description('Local-first repository intelligence for coding agents.').version(VERSION);
 
 program.command('index')
   .argument('[root]', 'repository root', '.')

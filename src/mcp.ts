@@ -2,11 +2,12 @@ import { buildImpactBrief } from './impact.js';
 import { buildContextPack } from './pack.js';
 import { findFile } from './fileBrief.js';
 import type { RepoAtlasIndex } from './types.js';
+import { VERSION } from './version.js';
 
 type JsonRpc = { id?: string | number; method?: string; params?: Record<string, unknown> };
 
 export async function handleMcpRequest(index: RepoAtlasIndex, request: JsonRpc) {
-  if (request.method === 'initialize') return result(request.id, { protocolVersion: '2024-11-05', serverInfo: { name: 'repoatlas', version: '0.1.0' }, capabilities: { tools: {} } });
+  if (request.method === 'initialize') return result(request.id, { protocolVersion: '2024-11-05', serverInfo: { name: 'repoatlas', version: VERSION }, capabilities: { tools: {} } });
   if (request.method === 'tools/list') return result(request.id, { tools: tools() });
   if (request.method === 'tools/call') return callTool(index, request);
   return result(request.id, {});
