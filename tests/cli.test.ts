@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, cp, rm } from 'node:fs/promises';
+import { mkdtemp, cp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFile, spawn } from 'node:child_process';
@@ -9,6 +9,27 @@ import { test } from 'node:test';
 const run = promisify(execFile);
 const fixture = new URL('./tests/fixtures/mixed-repo/', `file://${process.cwd()}/`).pathname;
 const cli = new URL('./dist/src/cli.js', `file://${process.cwd()}/`).pathname;
+
+test('CLI and MCP expose the package version', async () => {
+  const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as { version: string };
+  const version = await run('node', [cli, '--version']);
+  assert.equal(version.stdout.trim(), packageJson.version);
+
+  const dir = await mkdtemp(path.join(tmpdir(), 'repoatlas-version-'));
+  try {
+    await cp(fixture, dir, { recursive: true });
+    await run('node', [cli, 'index', dir]);
+    const mcp = await runWithInput(
+      'node',
+      [cli, 'mcp', '--root', dir, '--stdio'],
+      '{"jsonrpc":"2.0","id":1,"method":"initialize"}\n',
+    );
+    const response = JSON.parse(mcp.stdout) as { result: { serverInfo: { version: string } } };
+    assert.equal(response.result.serverInfo.version, packageJson.version);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 
 test('CLI indexes, briefs, packs, asks, and serves MCP tools', async () => {
   const dir = await mkdtemp(path.join(tmpdir(), 'repoatlas-'));
