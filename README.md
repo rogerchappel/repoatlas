@@ -101,7 +101,9 @@ bash scripts/validate.sh
 assertions, and release-contract tests. It also requires the candidate version
 to be greater than the current npm `latest` version. `release:dry-run` verifies
 that the packed artifact version agrees with a `RELEASE_TAG` when one is
-provided. Maintainers can use the
+provided. The version in `package.json` is the single source for the packaged
+CLI `--version` output and MCP `initialize` server information; package smoke
+checks both surfaces. Maintainers can use the
 [release checklist](docs/RELEASE_CHECKLIST.md) to review a candidate without
 publishing or tagging it.
 
