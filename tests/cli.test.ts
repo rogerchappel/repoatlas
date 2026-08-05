@@ -53,6 +53,38 @@ test('CLI indexes, briefs, packs, asks, and serves MCP tools', async () => {
   }
 });
 
+test('pack rejects invalid token budgets', async () => {
+  for (const value of ['nope', 'NaN', 'Infinity', '0', '-1', '1.5', '9007199254740992']) {
+    await assert.rejects(
+      run('node', [cli, 'pack', '--max-tokens', value]),
+      (error: { code?: number; stderr?: string }) => {
+        assert.notEqual(error.code, 0);
+        assert.match(error.stderr ?? '', /--max-tokens must be a positive integer/);
+        return true;
+      },
+    );
+  }
+});
+
+test('pack accepts boundary budgets and enforces the rough content limit', async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'repoatlas-budget-'));
+  try {
+    await cp(fixture, dir, { recursive: true });
+    await run('node', [cli, 'index', dir]);
+
+    const minimal = await run('node', [cli, 'pack', '--root', dir, '--topic', 'social', '--max-tokens', '1']);
+    assert.match(minimal.stdout, /repoatlas context pack/);
+    assert.doesNotMatch(minimal.stdout, /^## /m);
+
+    const budget = 1200;
+    const packed = await run('node', [cli, 'pack', '--root', dir, '--topic', 'social', '--max-tokens', String(budget)]);
+    const content = packed.stdout.slice(packed.stdout.search(/^## /m));
+    assert.ok(content.length <= budget * 4, `${content.length} characters exceeded the ${budget * 4}-character content budget`);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 function runWithInput(command: string, args: string[], input: string): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] });

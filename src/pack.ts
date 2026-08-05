@@ -7,7 +7,7 @@ export async function buildContextPack(index: RepoAtlasIndex, topic: string, max
   const scored = index.files.map((file) => ({ file, score: scoreFile(file.path, terms) + file.symbols.filter((s) => terms.some((t) => s.name.toLowerCase().includes(t))).length * 3 }))
     .filter((x) => x.score > 0 || x.file.role === 'docs')
     .sort((a, b) => b.score - a.score || a.file.path.localeCompare(b.file.path));
-  const budget = Math.max(1000, maxTokens) * 4;
+  const budget = maxTokens * 4;
   let used = 0;
   const chunks = [`# repoatlas context pack`, ``, `Topic: ${topic}`, `Root: ${index.root}`, ``];
   for (const { file } of scored.slice(0, 20)) {
