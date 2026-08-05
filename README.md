@@ -57,6 +57,10 @@ Creates a compact markdown evidence pack for agents.
 repoatlas pack --topic "database queue writes" --max-tokens 4000
 ```
 
+`--max-tokens` accepts positive integers only and defaults to `8000`. The
+deterministic rough limit budgets four source characters per token; fixed pack
+metadata is emitted separately from that content budget.
+
 ### `repoatlas ask <query>`
 
 Searches indexed paths and symbols deterministically.
