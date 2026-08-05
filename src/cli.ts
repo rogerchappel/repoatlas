@@ -49,7 +49,7 @@ program.command('file')
 program.command('pack')
   .option('-r, --root <root>', 'repository root', '.')
   .option('--topic <topic>', 'topic to pack', 'repository overview')
-  .option('--max-tokens <tokens>', 'rough token budget', (v) => Number(v), 8000)
+  .option('--max-tokens <tokens>', 'positive integer rough token budget', parsePositiveInteger, 8000)
   .description('Create a compact cited context pack for a topic.')
   .action(async (opts: { root: string; topic: string; maxTokens: number }) => {
     console.log(await buildContextPack(await loadIndex(opts.root), opts.topic, opts.maxTokens));
@@ -81,3 +81,10 @@ program.parseAsync().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
+
+function parsePositiveInteger(value: string): number {
+  if (!/^\d+$/.test(value)) throw new Error('--max-tokens must be a positive integer');
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error('--max-tokens must be a positive integer');
+  return parsed;
+}
