@@ -14,7 +14,7 @@ export async function buildContextPack(index: RepoAtlasIndex, topic: string, max
     const header = `## ${file.path}\nrole=${file.role} language=${file.language} bytes=${file.bytes}\n`;
     const body = await readSnippet(index.root, file.path);
     const block = `${header}\n\`\`\`\n${body}\n\`\`\`\n`;
-    if (used + block.length > budget) break;
+    if (used + block.length > budget) continue;
     chunks.push(block);
     used += block.length;
   }
