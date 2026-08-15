@@ -7,13 +7,18 @@ import { VERSION } from './version.js';
 type JsonRpc = { id?: string | number; method?: string; params?: Record<string, unknown> };
 
 export async function handleMcpRequest(index: RepoAtlasIndex, request: JsonRpc) {
+  if (request.id === undefined) return undefined;
   if (request.method === 'initialize') return result(request.id, { protocolVersion: '2024-11-05', serverInfo: { name: 'repoatlas', version: VERSION }, capabilities: { tools: {} } });
   if (request.method === 'tools/list') return result(request.id, { tools: tools() });
   if (request.method === 'tools/call') return callTool(index, request);
-  return result(request.id, {});
+  return methodNotFound(request.id, request.method);
 }
 
-export async function runMcpStdio(index: RepoAtlasIndex, input = process.stdin, output = process.stdout) {
+export async function runMcpStdio(
+  index: RepoAtlasIndex,
+  input: NodeJS.ReadableStream & AsyncIterable<string | Buffer> = process.stdin,
+  output: Pick<NodeJS.WritableStream, 'write'> = process.stdout,
+) {
   let buffer = '';
   input.setEncoding('utf8');
   for await (const chunk of input) {
@@ -24,7 +29,8 @@ export async function runMcpStdio(index: RepoAtlasIndex, input = process.stdin, 
       buffer = buffer.slice(idx + 1);
       if (!line) continue;
       const req = JSON.parse(line) as JsonRpc;
-      output.write(`${JSON.stringify(await handleMcpRequest(index, req))}\n`);
+      const response = await handleMcpRequest(index, req);
+      if (response !== undefined) output.write(`${JSON.stringify(response)}\n`);
     }
   }
 }
@@ -39,17 +45,31 @@ function tools() {
 }
 
 async function callTool(index: RepoAtlasIndex, request: JsonRpc) {
-  const name = String(request.params?.name ?? '');
-  const args = (request.params?.arguments ?? {}) as Record<string, unknown>;
-  if (name === 'repoatlas_search') return text(request.id, search(index, String(args.query ?? '')));
-  if (name === 'repoatlas_impact') return text(request.id, JSON.stringify(buildImpactBrief(index, String(args.target ?? '')), null, 2));
-  if (name === 'repoatlas_file_brief') return text(request.id, JSON.stringify(findFile(index, String(args.target ?? '')) ?? null, null, 2));
+  const name = request.params?.name;
+  if (typeof name !== 'string') return invalidParams(request.id, 'name must be a string');
+  const rawArgs = request.params?.arguments;
+  if (rawArgs !== undefined && (!rawArgs || typeof rawArgs !== 'object' || Array.isArray(rawArgs))) {
+    return invalidParams(request.id, 'arguments must be an object');
+  }
+  const args = (rawArgs ?? {}) as Record<string, unknown>;
+  if (name === 'repoatlas_search') {
+    const error = requiredString(args, 'query');
+    return error ? invalidParams(request.id, error) : text(request.id, search(index, args.query as string));
+  }
+  if (name === 'repoatlas_impact' || name === 'repoatlas_file_brief') {
+    const error = requiredString(args, 'target');
+    if (error) return invalidParams(request.id, error);
+    const value = name === 'repoatlas_impact' ? buildImpactBrief(index, args.target as string) : findFile(index, args.target as string) ?? null;
+    return text(request.id, JSON.stringify(value, null, 2));
+  }
   if (name === 'repoatlas_context_pack') {
+    const topicError = requiredString(args, 'topic');
+    if (topicError) return invalidParams(request.id, topicError);
     const maxTokens = Object.prototype.hasOwnProperty.call(args, 'maxTokens') ? args.maxTokens : 8000;
     if (typeof maxTokens !== 'number' || !Number.isSafeInteger(maxTokens) || maxTokens <= 0) {
       return invalidParams(request.id, 'maxTokens must be a positive safe integer');
     }
-    return text(request.id, await buildContextPack(index, String(args.topic ?? ''), maxTokens));
+    return text(request.id, await buildContextPack(index, args.topic as string, maxTokens));
   }
   return { jsonrpc: '2.0', id: request.id, error: { code: -32601, message: `Unknown tool: ${name}` } };
 }
@@ -61,3 +81,7 @@ function search(index: RepoAtlasIndex, query: string) {
 function text(id: JsonRpc['id'], value: string) { return result(id, { content: [{ type: 'text', text: value }] }); }
 function result(id: JsonRpc['id'], value: unknown) { return { jsonrpc: '2.0', id, result: value }; }
 function invalidParams(id: JsonRpc['id'], message: string) { return { jsonrpc: '2.0', id, error: { code: -32602, message: `Invalid params: ${message}` } }; }
+function methodNotFound(id: JsonRpc['id'], method: unknown) { return { jsonrpc: '2.0', id, error: { code: -32601, message: `Method not found: ${String(method ?? '')}` } }; }
+function requiredString(args: Record<string, unknown>, name: string) {
+  return typeof args[name] === 'string' ? undefined : `${name} must be a string`;
+}
