@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
+import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
 import { buildIndex } from '../src/indexer.js';
-import { handleMcpRequest } from '../src/mcp.js';
+import { handleMcpRequest, runMcpStdio } from '../src/mcp.js';
 
 const fixture = new URL('./tests/fixtures/mixed-repo/', `file://${process.cwd()}/`).pathname;
 
@@ -59,12 +60,69 @@ test('context pack tool accepts defaults and enforces valid boundary budgets', a
   assert.ok(boundedText.slice(contentStart).length <= budget * 4);
 
   const defaulted = await call();
-  assert.ok('result' in defaulted);
+  assert.ok(defaulted && 'result' in defaulted);
   const safeIntegerBoundary = await call(Number.MAX_SAFE_INTEGER);
-  assert.ok('result' in safeIntegerBoundary);
+  assert.ok(safeIntegerBoundary && 'result' in safeIntegerBoundary);
 });
 
-function getResult(response: { result: unknown } | { error: unknown }): unknown {
-  assert.ok('result' in response);
+test('request routing returns method not found while valid requests still work', async () => {
+  const index = await buildIndex(fixture);
+  assert.deepEqual(await handleMcpRequest(index, { id: 7, method: 'does/not/exist' }), {
+    jsonrpc: '2.0',
+    id: 7,
+    error: { code: -32601, message: 'Method not found: does/not/exist' },
+  });
+  const response = await handleMcpRequest(index, { id: 8, method: 'tools/list' });
+  assert.ok('result' in response!);
+});
+
+test('tools reject missing and wrong-typed required arguments', async () => {
+  const index = await buildIndex(fixture);
+  const cases = [
+    ['repoatlas_search', {}, 'query'],
+    ['repoatlas_search', { query: 42 }, 'query'],
+    ['repoatlas_impact', {}, 'target'],
+    ['repoatlas_file_brief', { target: false }, 'target'],
+    ['repoatlas_context_pack', {}, 'topic'],
+    ['repoatlas_context_pack', { topic: null }, 'topic'],
+  ] as const;
+
+  for (const [name, args, field] of cases) {
+    assert.deepEqual(await handleMcpRequest(index, {
+      id: 9,
+      method: 'tools/call',
+      params: { name, arguments: args },
+    }), {
+      jsonrpc: '2.0',
+      id: 9,
+      error: { code: -32602, message: `Invalid params: ${field} must be a string` },
+    });
+  }
+});
+
+test('stdio emits no response for notifications and continues with requests', async () => {
+  const index = await buildIndex(fixture);
+  const input = new PassThrough();
+  const output = new PassThrough();
+  let written = '';
+  output.setEncoding('utf8');
+  output.on('data', (chunk) => { written += chunk; });
+
+  const running = runMcpStdio(index, input, output);
+  input.end([
+    JSON.stringify({ jsonrpc: '2.0', method: 'tools/list' }),
+    JSON.stringify({ jsonrpc: '2.0', id: 10, method: 'tools/list' }),
+    '',
+  ].join('\n'));
+  await running;
+
+  const responses = written.trim().split('\n').map((line) => JSON.parse(line));
+  assert.equal(responses.length, 1);
+  assert.equal(responses[0].id, 10);
+  assert.ok(Array.isArray(responses[0].result.tools));
+});
+
+function getResult(response: { result: unknown } | { error: unknown } | undefined): unknown {
+  assert.ok(response && 'result' in response);
   return response.result;
 }
