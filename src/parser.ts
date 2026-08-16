@@ -29,6 +29,7 @@ export function extractSymbols(file: string, source: string, language: Language)
 
 function extractJsTsImports(file: string, source: string, allFiles: Set<string>): ImportEdge[] {
   const edges: ImportEdge[] = [];
+  const ignoredRanges = jsTsCommentAndLiteralRanges(source);
   const patterns: Array<[RegExp, ImportEdge['kind']]> = [
     [/import\s+(?:type\s+)?(?:[^'\"]+from\s+)?['\"]([^'\"]+)['\"]/g, 'static'],
     [/export\s+[^'\"]*from\s+['\"]([^'\"]+)['\"]/g, 'static'],
@@ -36,9 +37,55 @@ function extractJsTsImports(file: string, source: string, allFiles: Set<string>)
     [/import\(\s*['\"]([^'\"]+)['\"]\s*\)/g, 'dynamic']
   ];
   for (const [re, kind] of patterns) {
-    for (const m of source.matchAll(re)) edges.push(edge(file, m[1], kind, allFiles));
+    for (const m of source.matchAll(re)) {
+      if (!isInRange(m.index, ignoredRanges)) edges.push(edge(file, m[1], kind, allFiles));
+    }
   }
   return dedupeEdges(edges);
+}
+
+function jsTsCommentAndLiteralRanges(source: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  let i = 0;
+  while (i < source.length) {
+    const start = i;
+    const char = source[i];
+    const next = source[i + 1];
+    if (char === '/' && next === '/') {
+      i += 2;
+      while (i < source.length && source[i] !== '\n') i += 1;
+      ranges.push([start, i]);
+      continue;
+    }
+    if (char === '/' && next === '*') {
+      i += 2;
+      while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) i += 1;
+      i = Math.min(i + 2, source.length);
+      ranges.push([start, i]);
+      continue;
+    }
+    if (char === "'" || char === '"' || char === '`') {
+      const quote = char;
+      i += 1;
+      while (i < source.length) {
+        if (source[i] === '\\') {
+          i += 2;
+          continue;
+        }
+        i += 1;
+        if (source[i - 1] === quote) break;
+      }
+      ranges.push([start, i]);
+      continue;
+    }
+    i += 1;
+  }
+  return ranges;
+}
+
+function isInRange(index: number | undefined, ranges: Array<[number, number]>): boolean {
+  if (index === undefined) return false;
+  return ranges.some(([start, end]) => index >= start && index < end);
 }
 
 function extractPythonImports(file: string, source: string, allFiles: Set<string>): ImportEdge[] {
