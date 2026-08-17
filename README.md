@@ -101,6 +101,10 @@ npm run release:check
 bash scripts/validate.sh
 ```
 
+Repoatlas supports Node.js 20 and later. CI verifies clean, reproducible
+`npm ci` installs and the full release checks at the Node 20/npm 10 and Node
+24/npm 11 runtime endpoints.
+
 `release:check` runs the typecheck, tests, build, smoke fixture, package
 assertions, and release-contract tests. It also requires the candidate version
 to be greater than the current npm `latest` version. `release:dry-run` verifies
