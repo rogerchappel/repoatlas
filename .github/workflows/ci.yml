@@ -48,19 +48,32 @@ jobs:
             exit 1
           fi
 
-      - name: Run Node release checks
+  runtime-compatibility:
+    name: Runtime compatibility (Node ${{ matrix.node }}, npm ${{ matrix.npm }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - node: 20
+            npm: 10
+          - node: 24
+            npm: 11
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install supported npm endpoint
+        run: npm install --global npm@${{ matrix.npm }}
+
+      - name: Verify clean install and release checks
         run: |
-          set -euo pipefail
-
-          if [ ! -f package.json ]; then
-            echo "package.json is required for Repoatlas release checks."
-            exit 1
-          fi
-
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
+          npm ci
           npm run release:check

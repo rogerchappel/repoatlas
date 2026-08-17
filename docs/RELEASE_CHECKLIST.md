@@ -9,7 +9,8 @@ deploy; pushing an approved version tag starts the publishing workflow.
    `package.json` is the runtime source of truth: the CLI `--version` output and
    MCP `initialize` response both read this value rather than carrying separate
    version constants.
-3. Run `npm ci` and `npm run release:check` on a supported Node.js version.
+3. Run `npm ci` and `npm run release:check` at both supported runtime
+   endpoints: Node 20/npm 10 and Node 24/npm 11.
 4. Run `RELEASE_TAG=vX.Y.Z npm run release:dry-run` with the candidate tag.
 5. Review the `npm run package:smoke` file count and tarball allowlist result.
 6. Verify the README install, CLI, library, and MCP examples against the candidate.
