@@ -122,6 +122,45 @@ test('stdio emits no response for notifications and continues with requests', as
   assert.ok(Array.isArray(responses[0].result.tools));
 });
 
+test('stdio reports malformed frames and continues with the next request', async () => {
+  const responses = await exchangeMcpFrames([
+    '{bad json',
+    JSON.stringify({ jsonrpc: '2.0', id: 11, method: 'tools/list' }),
+    '',
+  ].join('\n'));
+
+  assert.deepEqual(responses[0], {
+    jsonrpc: '2.0',
+    id: null,
+    error: { code: -32700, message: 'Parse error' },
+  });
+  assert.equal(responses[1].id, 11);
+  assert.ok(Array.isArray(responses[1].result.tools));
+});
+
+test('stdio processes one complete trailing request at EOF without a newline', async () => {
+  const responses = await exchangeMcpFrames(
+    JSON.stringify({ jsonrpc: '2.0', id: 12, method: 'tools/list' }),
+  );
+
+  assert.equal(responses.length, 1);
+  assert.equal(responses[0].id, 12);
+  assert.ok(Array.isArray(responses[0].result.tools));
+});
+
+async function exchangeMcpFrames(payload: string): Promise<any[]> {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  let written = '';
+  output.setEncoding('utf8');
+  output.on('data', (chunk) => { written += chunk; });
+
+  const running = runMcpStdio(await buildIndex(fixture), input, output);
+  input.end(payload);
+  await running;
+  return written.trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
+}
+
 function getResult(response: { result: unknown } | { error: unknown } | undefined): unknown {
   assert.ok(response && 'result' in response);
   return response.result;

@@ -25,3 +25,9 @@ Run with:
 ```bash
 repoatlas mcp --stdio
 ```
+
+The stdio transport uses newline-delimited JSON-RPC: send one complete JSON
+request or notification per line. Malformed frames receive a JSON-RPC parse
+error, and the server continues reading later frames. A final complete request
+is also processed when stdin closes without a trailing newline. Notifications
+remain silent.

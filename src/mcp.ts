@@ -28,11 +28,27 @@ export async function runMcpStdio(
       const line = buffer.slice(0, idx).trim();
       buffer = buffer.slice(idx + 1);
       if (!line) continue;
-      const req = JSON.parse(line) as JsonRpc;
-      const response = await handleMcpRequest(index, req);
-      if (response !== undefined) output.write(`${JSON.stringify(response)}\n`);
+      await processFrame(index, line, output);
     }
   }
+  const trailingFrame = buffer.trim();
+  if (trailingFrame) await processFrame(index, trailingFrame, output);
+}
+
+async function processFrame(
+  index: RepoAtlasIndex,
+  frame: string,
+  output: Pick<NodeJS.WritableStream, 'write'>,
+) {
+  let request: JsonRpc;
+  try {
+    request = JSON.parse(frame) as JsonRpc;
+  } catch {
+    output.write(`${JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } })}\n`);
+    return;
+  }
+  const response = await handleMcpRequest(index, request);
+  if (response !== undefined) output.write(`${JSON.stringify(response)}\n`);
 }
 
 function tools() {
