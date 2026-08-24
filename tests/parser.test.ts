@@ -46,3 +46,25 @@ test('ignores import-like text in JavaScript comments and literals', () => {
     ]
   );
 });
+
+test('extracts every Python module from comma-separated and relative imports', () => {
+  const files = new Set(['pkg/a.py', 'pkg/b.py', 'pkg/sub/a.py', 'pkg/sub/entry.py']);
+  const source = [
+    'import pkg.a, pkg.b as bee',
+    'from . import a',
+    'from pkg import a, b as bee',
+    'import pkg.a'
+  ].join('\n');
+
+  assert.deepEqual(extractImports('pkg/sub/entry.py', source, 'python', files), [
+    { from: 'pkg/sub/entry.py', to: 'pkg/a.py', specifier: 'pkg.a', kind: 'python', resolved: true },
+    { from: 'pkg/sub/entry.py', to: 'pkg/b.py', specifier: 'pkg.b', kind: 'python', resolved: true },
+    { from: 'pkg/sub/entry.py', to: 'pkg/sub/a.py', specifier: '.a', kind: 'python', resolved: true }
+  ]);
+});
+
+test('retains the imported package when from-import names are not modules', () => {
+  assert.deepEqual(extractImports('app.py', 'from pkg import value as renamed', 'python', new Set(['pkg/__init__.py'])), [
+    { from: 'app.py', to: 'pkg/__init__.py', specifier: 'pkg', kind: 'python', resolved: true }
+  ]);
+});
