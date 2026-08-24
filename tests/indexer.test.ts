@@ -12,6 +12,15 @@ test('indexes fixture files with deterministic import edges', async () => {
   assert.ok(index.edges.find((e) => e.from === 'src/app.ts' && e.to === 'src/routes/social.ts'));
   assert.ok(index.edges.find((e) => e.from === 'src/routes/social.ts' && e.to === 'src/lib/db.ts'));
   assert.ok(index.edges.find((e) => e.from === 'src/worker.py' && e.to === 'services/publisher.py'));
+  assert.deepEqual(
+    index.edges.filter((edge) => edge.from === 'src/worker.py'),
+    [
+      { from: 'src/worker.py', to: 'services/publisher.py', specifier: 'services.publisher', kind: 'python', resolved: true },
+      { from: 'src/worker.py', to: 'services/alpha.py', specifier: 'services.alpha', kind: 'python', resolved: true },
+      { from: 'src/worker.py', to: 'services/beta.py', specifier: 'services.beta', kind: 'python', resolved: true },
+      { from: 'src/worker.py', to: 'src/helper_module.py', specifier: '.helper_module', kind: 'python', resolved: true }
+    ]
+  );
 });
 
 test('classifies roles and symbols', async () => {
