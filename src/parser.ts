@@ -91,12 +91,26 @@ function isInRange(index: number | undefined, ranges: Array<[number, number]>): 
 function extractPythonImports(file: string, source: string, allFiles: Set<string>): ImportEdge[] {
   const edges: ImportEdge[] = [];
   for (const line of source.split(/\r?\n/)) {
-    const from = /^\s*from\s+([A-Za-z_][\w.]*|\.+[A-Za-z_][\w.]*)\s+import\s+/.exec(line);
-    const imp = /^\s*import\s+([A-Za-z_][\w.]*)(?:\s+as\s+\w+)?/.exec(line);
-    if (from) edges.push(edge(file, from[1], 'python', allFiles));
-    if (imp) edges.push(edge(file, imp[1], 'python', allFiles));
+    const from = /^\s*from\s+([A-Za-z_][\w.]*|\.+(?:[A-Za-z_][\w.]*)?)\s+import\s+(.+?)\s*(?:#.*)?$/.exec(line);
+    const imp = /^\s*import\s+(.+?)\s*(?:#.*)?$/.exec(line);
+    if (from) {
+      const names = pythonImportNames(from[2]);
+      const submodules = names.map((name) => edge(file, `${from[1]}${from[1].endsWith('.') ? '' : '.'}${name}`, 'python', allFiles));
+      const resolved = submodules.filter((candidate) => candidate.resolved);
+      edges.push(...(resolved.length > 0 ? resolved : [edge(file, from[1], 'python', allFiles)]));
+    } else if (imp) {
+      for (const name of pythonImportNames(imp[1])) edges.push(edge(file, name, 'python', allFiles));
+    }
   }
   return dedupeEdges(edges);
+}
+
+function pythonImportNames(clause: string): string[] {
+  return clause
+    .replace(/^\(|\)$/g, '')
+    .split(',')
+    .map((part) => part.trim().replace(/\s+as\s+[A-Za-z_]\w*$/, ''))
+    .filter((part) => /^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*$/.test(part));
 }
 
 function edge(from: string, specifier: string, kind: ImportEdge['kind'], allFiles: Set<string>): ImportEdge {
@@ -108,6 +122,13 @@ export function resolveImport(from: string, specifier: string, allFiles: Set<str
   if (!specifier.startsWith('.') && !specifier.startsWith('/')) {
     const py = specifier.replace(/\./g, '/');
     return firstExisting([`${py}.py`, `${py}/__init__.py`, `src/${py}.py`, `src/${py}/__init__.py`], allFiles);
+  }
+  const pythonRelative = /^(\.+)([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)$/.exec(specifier);
+  if (pythonRelative) {
+    const parentSegments = Array.from({ length: pythonRelative[1].length - 1 }, () => '..');
+    const moduleSegments = pythonRelative[2].split('.');
+    const pyBase = path.posix.normalize(path.posix.join(path.posix.dirname(from), ...parentSegments, ...moduleSegments));
+    return firstExisting([`${pyBase}.py`, `${pyBase}/__init__.py`], allFiles);
   }
   const base = specifier.startsWith('/') ? specifier.slice(1) : path.posix.normalize(path.posix.join(path.posix.dirname(from), specifier));
   return firstExisting([
