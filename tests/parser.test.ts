@@ -68,3 +68,22 @@ test('retains the imported package when from-import names are not modules', () =
     { from: 'app.py', to: 'pkg/__init__.py', specifier: 'pkg', kind: 'python', resolved: true }
   ]);
 });
+
+test('extracts parenthesized multiline Python from-imports', () => {
+  const files = new Set(['pkg/a.py', 'pkg/b.py', 'pkg/c.py', 'pkg/sub/entry.py']);
+  const source = [
+    'from pkg import (',
+    '  a,',
+    '  b as bee, # imported under an alias',
+    ')',
+    'from .. import (',
+    '  c,',
+    ')'
+  ].join('\n');
+
+  assert.deepEqual(extractImports('pkg/sub/entry.py', source, 'python', files), [
+    { from: 'pkg/sub/entry.py', to: 'pkg/a.py', specifier: 'pkg.a', kind: 'python', resolved: true },
+    { from: 'pkg/sub/entry.py', to: 'pkg/b.py', specifier: 'pkg.b', kind: 'python', resolved: true },
+    { from: 'pkg/sub/entry.py', to: 'pkg/c.py', specifier: '..c', kind: 'python', resolved: true }
+  ]);
+});

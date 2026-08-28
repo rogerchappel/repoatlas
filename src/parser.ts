@@ -90,7 +90,7 @@ function isInRange(index: number | undefined, ranges: Array<[number, number]>): 
 
 function extractPythonImports(file: string, source: string, allFiles: Set<string>): ImportEdge[] {
   const edges: ImportEdge[] = [];
-  for (const line of source.split(/\r?\n/)) {
+  for (const line of pythonImportStatements(source)) {
     const from = /^\s*from\s+([A-Za-z_][\w.]*|\.+(?:[A-Za-z_][\w.]*)?)\s+import\s+(.+?)\s*(?:#.*)?$/.exec(line);
     const imp = /^\s*import\s+(.+?)\s*(?:#.*)?$/.exec(line);
     if (from) {
@@ -103,6 +103,28 @@ function extractPythonImports(file: string, source: string, allFiles: Set<string
     }
   }
   return dedupeEdges(edges);
+}
+
+function pythonImportStatements(source: string): string[] {
+  const statements: string[] = [];
+  let multiline = '';
+  for (const rawLine of source.split(/\r?\n/)) {
+    const line = rawLine.replace(/#.*$/, '').trimEnd();
+    if (multiline) {
+      multiline += ` ${line.trim()}`;
+      if (line.includes(')')) {
+        statements.push(multiline);
+        multiline = '';
+      }
+      continue;
+    }
+    if (/^\s*from\s+\S+\s+import\s+\(\s*$/.test(line)) {
+      multiline = line;
+    } else {
+      statements.push(line);
+    }
+  }
+  return statements;
 }
 
 function pythonImportNames(clause: string): string[] {
