@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { buildIndex } from '../src/indexer.js';
 import { buildImpactBrief } from '../src/impact.js';
+import { extractImports } from '../src/parser.js';
 
 const root = new URL('./tests/fixtures/mixed-repo/', `file://${process.cwd()}/`).pathname;
 
@@ -38,4 +39,31 @@ test('impact brief cites dependents, tests, and docs', async () => {
   assert.ok(brief.likelyTests.includes('tests/social.routes.test.ts'));
   assert.ok(brief.relevantDocs.includes('docs/social.md'));
   assert.ok(brief.evidence.includes('src/routes/social.ts'));
+});
+
+test('indexes imports inside executable template substitutions', () => {
+  const files = new Set(['src/app.ts', 'src/real.ts', 'src/required.ts']);
+  const source = [
+    'const rendered = `literal import("ignored-package") ${await import("./real.js")}`;',
+    'const nested = `outer ${`inner ${require("./required.js")}`}`;'
+  ].join('\n');
+
+  assert.deepEqual(extractImports('src/app.ts', source, 'typescript', files), [
+    { from: 'src/app.ts', to: 'src/required.ts', specifier: './required.js', kind: 'commonjs', resolved: true },
+    { from: 'src/app.ts', to: 'src/real.ts', specifier: './real.js', kind: 'dynamic', resolved: true }
+  ]);
+});
+
+test('ignores import-like text inside regex literals', () => {
+  const files = new Set(['src/app.ts', 'src/real.ts']);
+  const source = [
+    'const detector = /import("fake-package")/gi;',
+    'const required = /require("also-fake")/;',
+    'const ratio = total / divisor;',
+    'const loaded = import("./real.js");'
+  ].join('\n');
+
+  assert.deepEqual(extractImports('src/app.ts', source, 'typescript', files), [
+    { from: 'src/app.ts', to: 'src/real.ts', specifier: './real.js', kind: 'dynamic', resolved: true }
+  ]);
 });
