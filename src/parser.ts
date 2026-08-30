@@ -47,39 +47,99 @@ function extractJsTsImports(file: string, source: string, allFiles: Set<string>)
 function jsTsCommentAndLiteralRanges(source: string): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
   let i = 0;
-  while (i < source.length) {
-    const start = i;
-    const char = source[i];
-    const next = source[i + 1];
-    if (char === '/' && next === '/') {
-      i += 2;
-      while (i < source.length && source[i] !== '\n') i += 1;
-      ranges.push([start, i]);
-      continue;
+
+  const scanQuoted = (quote: string) => {
+    const start = i++;
+    while (i < source.length) {
+      if (source[i] === '\\') i += 2;
+      else if (source[i++] === quote) break;
     }
-    if (char === '/' && next === '*') {
-      i += 2;
-      while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) i += 1;
-      i = Math.min(i + 2, source.length);
-      ranges.push([start, i]);
-      continue;
-    }
-    if (char === "'" || char === '"' || char === '`') {
-      const quote = char;
-      i += 1;
-      while (i < source.length) {
-        if (source[i] === '\\') {
-          i += 2;
-          continue;
-        }
-        i += 1;
-        if (source[i - 1] === quote) break;
+    ranges.push([start, Math.min(i, source.length)]);
+  };
+
+  const scanRegex = () => {
+    const start = i++;
+    let inCharacterClass = false;
+    while (i < source.length) {
+      if (source[i] === '\\') {
+        i += 2;
+        continue;
       }
-      ranges.push([start, i]);
-      continue;
+      if (source[i] === '[') inCharacterClass = true;
+      else if (source[i] === ']') inCharacterClass = false;
+      else if (source[i] === '/' && !inCharacterClass) {
+        i += 1;
+        while (/[A-Za-z]/.test(source[i] ?? '')) i += 1;
+        break;
+      } else if (source[i] === '\n' || source[i] === '\r') break;
+      i += 1;
     }
-    i += 1;
-  }
+    ranges.push([start, i]);
+  };
+
+  const canStartRegex = (at: number) => {
+    const before = source.slice(0, at);
+    const token = /([A-Za-z_$][\w$]*|\+\+|--|=>|&&|\|\||\?\?|\S)\s*$/.exec(before)?.[1];
+    if (!token) return true;
+    if (/^(?:return|throw|case|delete|void|typeof|instanceof|in|of|yield|await)$/.test(token)) return true;
+    return /^(?:[({[=,:;!&|?+\-*%^~<>])$/.test(token);
+  };
+
+  const scanTemplate = () => {
+    let rawStart = i++;
+    while (i < source.length) {
+      if (source[i] === '\\') {
+        i += 2;
+        continue;
+      }
+      if (source[i] === '`') {
+        i += 1;
+        ranges.push([rawStart, i]);
+        return;
+      }
+      if (source[i] === '$' && source[i + 1] === '{') {
+        ranges.push([rawStart, i + 2]);
+        i += 2;
+        scanCode(true);
+        if (source[i] === '}') i += 1;
+        rawStart = i - 1;
+        continue;
+      }
+      i += 1;
+    }
+    ranges.push([rawStart, i]);
+  };
+
+  const scanCode = (stopAtClosingBrace = false) => {
+    let braceDepth = 0;
+    while (i < source.length) {
+      const start = i;
+      const char = source[i];
+      const next = source[i + 1];
+      if (stopAtClosingBrace && char === '}' && braceDepth === 0) return;
+      if (char === '{') {
+        braceDepth += 1;
+        i += 1;
+      } else if (char === '}') {
+        braceDepth -= 1;
+        i += 1;
+      } else if (char === '/' && next === '/') {
+        i += 2;
+        while (i < source.length && source[i] !== '\n') i += 1;
+        ranges.push([start, i]);
+      } else if (char === '/' && next === '*') {
+        i += 2;
+        while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) i += 1;
+        i = Math.min(i + 2, source.length);
+        ranges.push([start, i]);
+      } else if (char === "'" || char === '"') scanQuoted(char);
+      else if (char === '`') scanTemplate();
+      else if (char === '/' && canStartRegex(i)) scanRegex();
+      else i += 1;
+    }
+  };
+
+  scanCode();
   return ranges;
 }
 
