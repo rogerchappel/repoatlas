@@ -32,12 +32,15 @@
     "check": "tsc --noEmit",
     "test": "node --test dist/**/*.test.js",
     "pretest": "npm run build",
+    "test:social": "node --test --test-name-pattern='CLI indexes, briefs, packs, asks, and serves MCP tools' dist/tests/cli.test.js",
+    "pretest:social": "npm run build",
+    "docs:contract": "node --test tests/docs-contract.test.mjs",
     "smoke": "bash tests/smoke.sh",
     "package:smoke": "npm run build && node scripts/package-smoke.mjs",
     "release:contract": "node scripts/release-contract.mjs",
     "release:contract:test": "node --test tests/release-contract.test.mjs",
     "release:dry-run": "node scripts/release-contract.mjs --pack",
-    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke && npm run release:contract:test && npm run release:contract"
+    "release:check": "npm run check && npm test && npm run docs:contract && npm run smoke && npm run package:smoke && npm run release:contract:test && npm run release:contract"
   },
   "keywords": [
     "mcp",
