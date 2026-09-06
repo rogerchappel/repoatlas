@@ -116,8 +116,8 @@ Related concepts:
 - publish audit log
 
 Suggested verification:
-- npm test -- social
-- npm run typecheck
+- `npm run test:social` runs the CLI integration test that exercises the social fixture.
+- `npm run check` type-checks the project without emitting build output.
 ```
 
 ## Verification
