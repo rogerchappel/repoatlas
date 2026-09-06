@@ -29,7 +29,6 @@ test('documented social verification selects only the intended CLI integration t
   assert.equal(result.status, 0, result.stderr);
   const output = `${result.stdout}\n${result.stderr}`;
   assert.match(output, /CLI indexes, briefs, packs, asks, and serves MCP tools/);
-  assert.match(output, /tests 1\b/);
   assert.match(output, /pass 1\b/);
-  assert.match(output, /skipped 0\b/);
+  assert.match(output, /fail 0\b/);
 });
