@@ -1,4 +1,7 @@
 import { spawnSync } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { handleMcpRequest } from '../dist/src/mcp.js';
 
 const result = spawnSync('npm', ['pack', '--dry-run', '--json'], {
@@ -11,6 +14,27 @@ if (result.status !== 0) {
 }
 
 const [pack] = JSON.parse(result.stdout);
+const installDir = await mkdtemp(path.join(tmpdir(), 'repoatlas-package-smoke-'));
+try {
+  const tarball = path.join(installDir, pack.filename);
+  const packed = spawnSync('npm', ['pack', '--pack-destination', installDir], { encoding: 'utf8' });
+  if (packed.status !== 0) throw new Error(packed.stderr || packed.stdout);
+  await writeFile(path.join(installDir, 'package.json'), '{"private":true,"type":"module"}');
+  const install = spawnSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball], {
+    cwd: installDir, encoding: 'utf8',
+  });
+  if (install.status !== 0) throw new Error(install.stderr || install.stdout);
+  const packageDir = path.join(installDir, 'node_modules', 'repoatlas');
+  const installedPackage = JSON.parse(await readFile(path.join(packageDir, 'package.json'), 'utf8'));
+  if (installedPackage.bin.repoatlas !== './dist/src/cli.js') throw new Error('Installed CLI entrypoint is incorrect');
+  const imported = await import(path.join(packageDir, installedPackage.exports['.']));
+  if (typeof imported.buildIndex !== 'function') throw new Error('Installed package import entrypoint is unavailable');
+} catch (error) {
+  console.error(error);
+  process.exitCode = 1;
+} finally {
+  await rm(installDir, { recursive: true, force: true });
+}
 const cliVersion = spawnSync(process.execPath, ['dist/src/cli.js', '--version'], {
   encoding: 'utf8',
 });
