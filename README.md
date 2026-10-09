@@ -2,6 +2,11 @@
 
 **Local-first codebase intelligence for coding agents.** repoatlas precomputes the boring repository facts agents keep rediscovering: file roles, import edges, symbols, likely tests, and compact context packs. It is deliberately deterministic, evidence-backed, and private by default.
 
+Install the published npm package globally to use the CLI. The repository tracks
+TypeScript source; the published package includes generated `dist/` entrypoints.
+When installing from a Git checkout or preparing a local package, build first
+with `npm ci && npm run build` so those entrypoints exist.
+
 ```bash
 npm install -g repoatlas
 repoatlas index .
@@ -103,7 +108,11 @@ bash scripts/validate.sh
 
 Repoatlas supports Node.js 20 and later. CI verifies clean, reproducible
 `npm ci` installs and the full release checks at the Node 20/npm 10 and Node
-24/npm 11 runtime endpoints.
+24/npm 11 runtime endpoints. The source checkout does not track generated
+`dist/` output: build it with `npm run build` before running the CLI directly or
+packing/installing the checkout locally. The published npm package contains
+`dist/src/cli.js` and `dist/src/index.js`; `npm run package:smoke` verifies the
+packed package includes and exposes both CLI and library entrypoints.
 
 `release:check` runs the typecheck, tests, build, smoke fixture, package
 assertions, and release-contract tests. It also requires the candidate version
