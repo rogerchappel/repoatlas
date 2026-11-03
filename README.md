@@ -97,14 +97,17 @@ repoatlas is local-first:
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run check
 npm test
-npm run build
 npm run smoke
 npm run release:check
 bash scripts/validate.sh
 ```
+
+`npm test` runs the build automatically before executing the generated test
+files. A clean checkout should use `npm ci` to install the lockfile exactly;
+there is no need to run the build separately before the tests.
 
 Repoatlas supports Node.js 20 and later. CI verifies clean, reproducible
 `npm ci` installs and the full release checks at the Node 20/npm 10 and Node
